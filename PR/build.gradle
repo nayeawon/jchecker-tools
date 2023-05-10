@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+}
+
+group 'edu.handong.csee.isel'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.7'
+
+    // https://mvnrepository.com/artifact/junit/junit
+    implementation group: 'junit', name: 'junit', version: '4.12'
+
+    // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+
+    // https://mvnrepository.com/artifact/org.eclipse.core/runtime
+    implementation group: 'org.eclipse.core', name: 'runtime', version: '3.10.0-v20140318-2214'
+
+    // https://mvnrepository.com/artifact/org.eclipse.birt.runtime/org.eclipse.core.resources
+    implementation group: 'org.eclipse.birt.runtime', name: 'org.eclipse.core.resources', version: '3.10.0.v20150423-0755'
+
+    // https://mvnrepository.com/artifact/org.eclipse.tycho/org.eclipse.jdt.core
+    implementation group: 'org.eclipse.tycho', name: 'org.eclipse.jdt.core', version: '3.14.0.v20171206-0802'
+
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
+}
+
+test {
+    useJUnitPlatform()
+}
