@@ -7,13 +7,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.stream.Stream;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
 public class GZoltarRunner {
     private static final String shellPath = "/home/DPMiner/lib/FL.sh";
-    public String run(String srcPath, String testPath) {
+    public JsonObject run(String srcPath, String testPath) {
         ArrayList<String> command = new ArrayList<>();
         command.add(shellPath);
         command.add(srcPath);
@@ -39,14 +37,15 @@ public class GZoltarRunner {
 
         ArrayList<Data> suspiciousResult = new ArrayList<>();
         parseResult(srcPath, suspiciousResult);
-        String sheet = convertToString(suspiciousResult);
+        JsonObject sheet = convertToString(suspiciousResult);
         return sheet;
     }
 
     private void parseResult(String srcPath, ArrayList<Data> suspiciousResult) {
         String sflResultPath = srcPath + "/sfl/txt/ochiai.ranking.csv";
+        BufferedReader reader = null;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(sflResultPath));
+            reader = new BufferedReader(new FileReader(sflResultPath));
             // line
             // edu.handong.csee.java.hw2$MathDriver#run(java.lang.String[]):118;1.0
             int count = 0;
@@ -85,10 +84,16 @@ public class GZoltarRunner {
             throw new RuntimeException(e);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    private String convertToString(ArrayList<Data> suspiciousResult) {
+    private JsonObject convertToString(ArrayList<Data> suspiciousResult) {
         JsonObject score = new JsonObject();
         String[] index = new String[]{"first", "second", "third"};
         int idx = 0;
@@ -101,8 +106,6 @@ public class GZoltarRunner {
             score.add(index[idx], info);
             idx++;
         }
-        Gson gson = (new GsonBuilder()).setPrettyPrinting().disableHtmlEscaping().create();
-        String sheet = gson.toJson(score);
-        return sheet;
+        return score;
     }
 }
