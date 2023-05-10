@@ -55,14 +55,14 @@ public abstract class RollingHashGenerator implements HashGenerator {
 
     public class RandomRollingHashGenerator extends RollingHashGenerator {
 
-        private static final Map<String, Integer> digests = new HashMap<>();
+        private Map<String, Integer> digests = new HashMap<>();
 
         @Override
         public int hashFunction(String s) {
             return rdmHash(s);
         }
 
-        public static int rdmHash(String s) {
+        public int rdmHash(String s) {
             if (!digests.containsKey(s)) {
                 int digest = (int) (Math.random() * (Integer.MAX_VALUE - 1));
                 digests.put(s, digest);
