@@ -128,15 +128,15 @@ public class TbarRunner {
         switch ((int) result) {
             case 0:
                 System.out.println("Failed to fix bug " + className + ":" + path);
-                new MailUtil(false).run(path);
+                new MailUtil(false).run(path, email);
                 break;
             case 1:
                 System.out.println("Succeeded to fix bug " + className + ":" + path);
-                new MailUtil(true).run(path + "/pr/FixedBugs");
+                new MailUtil(true).run(path + "/pr/FixedBugs", email);
                 break;
             case 2:
                 System.out.println("Partial succeeded to fix bug " + className + ":" + path);
-                new MailUtil(true).run(path + "/pr/PartiallyFixedBugs");
+                new MailUtil(true).run(path + "/pr/PartiallyFixedBugs", email);
                 break;
         }
     }
