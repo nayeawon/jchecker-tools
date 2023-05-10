@@ -12,11 +12,12 @@ public class MailUtil {
         this.succeed = succeed;
     }
 
-    public void run(String srcPath) {
+    public void run(String srcPath, String email) {
         ArrayList<String> command = new ArrayList<>();
         if (succeed) command.add(mailSuccessPath);
         else command.add(mailFailPath);
         command.add(srcPath);
+        command.add(email);
 
         ProcessBuilder builder;
         Process process = null;
