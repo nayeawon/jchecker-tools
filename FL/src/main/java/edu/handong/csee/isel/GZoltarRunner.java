@@ -44,9 +44,11 @@ public class GZoltarRunner {
         return sheet;
     }
 
-    private void parseResult(String srcPath, ArrayList<Data> suspiciousResult) {
-        if (!srcPath.endsWith("/")) srcPath += "/";
-        String sflResultPath = srcPath + "sfl/txt/ochiai.ranking.csv";
+    private void parseResult(String childPath, ArrayList<Data> suspiciousResult) {
+        if (!childPath.endsWith("/")) childPath += "/";
+        String subPath = childPath;
+        String parentPath = childPath.replace("autoGeneration/", "");
+        String sflResultPath = parentPath + "sfl/txt/ochiai.ranking.csv";
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new FileReader(sflResultPath));
@@ -63,16 +65,24 @@ public class GZoltarRunner {
                 int lineNumber = Integer.parseInt(line.substring(line.indexOf(":") + 1, line.indexOf(";")));
                 String suspiciousValue = line.substring(line.indexOf(";") + 1);
 
+                BufferedReader srclistReader = new BufferedReader(new FileReader(subPath + "srclist.txt"));
+                String absolutePath;
+                while ((absolutePath = srclistReader.readLine()) != null) {
+                    if (absolutePath.contains(packageName.replace(".", "/") + "/" + fileName + ".java")) break;
+                }
+                absolutePath = subPath + absolutePath.replace("./", "");
                 String fileContents;
                 try {
-                    byte[] bytes = Files.readAllBytes(new File(srcPath + "src/" + packageName.replace(".", "/") + "/" + fileName + ".java").toPath());
+                    byte[] bytes = Files.readAllBytes(new File(absolutePath).toPath());
                     fileContents = new String(bytes, StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+
                 if (fileContents.contains("public static void main")) continue;
+
                 String targetString;
-                try (Stream<String> lines = Files.lines(Paths.get(srcPath + "src/" + packageName.replace(".", "/") + "/" + fileName + ".java"))) {
+                try (Stream<String> lines = Files.lines(Paths.get(absolutePath))) {
                     targetString = lines.skip(lineNumber - 1).findFirst().get();
                 }
 
@@ -88,12 +98,6 @@ public class GZoltarRunner {
             throw new RuntimeException(e);
         } catch (IOException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                reader.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
@@ -116,11 +120,13 @@ public class GZoltarRunner {
     }
 
     private void writeJson(String sheet, String path) {
+        String parentPath = path.replace("autoGeneration/", "");
+        File file = new File(parentPath);
         try {
-            FileWriter file = new FileWriter(path);
-            file.write(sheet);
-            file.flush();
-            file.close();
+            FileWriter writer = new FileWriter(file);
+            writer.write(sheet);
+            writer.flush();
+            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
