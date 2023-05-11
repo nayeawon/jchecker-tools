@@ -94,6 +94,10 @@ public class TbarRunner {
     }
 
     public void fixBug(String path, String className, String email) {
+        String inputPath = path;
+        if (path.contains("/autoGeneration/")) {
+            path.replace("/autoGeneration/", "");
+        }
         ExecutorService executor = Executors.newCachedThreadPool();
         Callable<Object> task = new Callable<Object>() {
             @Override
@@ -102,7 +106,7 @@ public class TbarRunner {
                 Configuration.outputPath = path + "/pr";
                 String suspiciousFileStr = processRankingCsv(path + "/sfl/txt");
                 processFailedTests(path + "/sfl/txt");
-                AbstractFixer fixer = new TBarFixer(path, className);
+                AbstractFixer fixer = new TBarFixer(inputPath, className);
                 fixer.dataType = "TBar";
                 fixer.metric = Configuration.faultLocalizationMetric;
                 fixer.suspCodePosFile = new File(suspiciousFileStr);
