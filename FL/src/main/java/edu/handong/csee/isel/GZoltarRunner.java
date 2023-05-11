@@ -7,11 +7,13 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.stream.Stream;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
 public class GZoltarRunner {
     private static final String shellPath = "/home/DPMiner/lib/FL.sh";
-    public JsonObject run(String srcPath, String testPath) {
+    public String run(String srcPath, String testPath) {
         ArrayList<String> command = new ArrayList<>();
         command.add(shellPath);
         command.add(srcPath);
@@ -37,12 +39,14 @@ public class GZoltarRunner {
 
         ArrayList<Data> suspiciousResult = new ArrayList<>();
         parseResult(srcPath, suspiciousResult);
-        JsonObject sheet = convertToString(suspiciousResult);
+        String sheet = convertToString(suspiciousResult);
+        writeJson(sheet, srcPath + "sfl/txt/jchecker.json");
         return sheet;
     }
 
     private void parseResult(String srcPath, ArrayList<Data> suspiciousResult) {
-        String sflResultPath = srcPath + "/sfl/txt/ochiai.ranking.csv";
+        if (!srcPath.endsWith("/")) srcPath += "/";
+        String sflResultPath = srcPath + "sfl/txt/ochiai.ranking.csv";
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new FileReader(sflResultPath));
@@ -61,14 +65,14 @@ public class GZoltarRunner {
 
                 String fileContents;
                 try {
-                    byte[] bytes = Files.readAllBytes(new File(srcPath + "/src/" + packageName.replace(".", "/") + "/" + fileName + ".java").toPath());
+                    byte[] bytes = Files.readAllBytes(new File(srcPath + "src/" + packageName.replace(".", "/") + "/" + fileName + ".java").toPath());
                     fileContents = new String(bytes, StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
                 if (fileContents.contains("public static void main")) continue;
                 String targetString;
-                try (Stream<String> lines = Files.lines(Paths.get(srcPath + "/src/" + packageName.replace(".", "/") + "/" + fileName + ".java"))) {
+                try (Stream<String> lines = Files.lines(Paths.get(srcPath + "src/" + packageName.replace(".", "/") + "/" + fileName + ".java"))) {
                     targetString = lines.skip(lineNumber - 1).findFirst().get();
                 }
 
@@ -93,7 +97,7 @@ public class GZoltarRunner {
         }
     }
 
-    private JsonObject convertToString(ArrayList<Data> suspiciousResult) {
+    private String convertToString(ArrayList<Data> suspiciousResult) {
         JsonObject score = new JsonObject();
         String[] index = new String[]{"first", "second", "third"};
         int idx = 0;
@@ -106,6 +110,19 @@ public class GZoltarRunner {
             score.add(index[idx], info);
             idx++;
         }
-        return score;
+        Gson gson = (new GsonBuilder()).setPrettyPrinting().create();
+        String sheet = gson.toJson(score);
+        return sheet;
+    }
+
+    private void writeJson(String sheet, String path) {
+        try {
+            FileWriter file = new FileWriter(path);
+            file.write(sheet);
+            file.flush();
+            file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

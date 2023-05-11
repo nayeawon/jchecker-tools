@@ -8,9 +8,9 @@ public class Main {
         main.run(args[0], args[1]);
     }
 
-    public JsonObject run(String srcPath, String testPath) {
+    public String run(String srcPath, String testPath) {
         GZoltarRunner gzoltar = new GZoltarRunner();
-        JsonObject result = gzoltar.run(srcPath, testPath);
+        String result = gzoltar.run(srcPath, testPath);
         return result;
     }
 }
