@@ -5,17 +5,26 @@
 # command line interface either using instrumentation 'at runtime' or 'offline'.
 #
 # Usage:
-# ./run.sh
-#     --instrumentation <online|offline>
+# ./FL.sh <input> <test-dir>
 #     [--help]
 #
+# Example:
+# ./FL.sh /data/jchecker/{className}/{std_id}/yyyy_MM_dd_HH_mm_SS/autoGeneration/ /data/jchecker2.0/data/junitTest/{class_name}/
 # Requirements:
 # - `java` and `javac` needs to be set and must point to the Java installation.
 #
 # ------------------------------------------------------------------------------
-# ./FL.sh <input> <test-dir>
-# ./FL.sh /data/jchecker/{className}/{std_id}/yyyy_MM_dd_HH_mm_SS/autoGeneration /data/jchecker/data/test/{class_name}
+
 SCRIPT_DIR=$(cd "$1" && pwd)
+LAST_CHAR="${SCRIPT_DIR: -1}"
+if [[ "$LAST_CHAR" != "/" ]]; then
+  SCRIPT_DIR="${SCRIPT_DIR}/"
+fi
+
+JCHECKER=0
+if [[ $SCRIPT_DIR == *"autoGeneration"* ]]; then
+  JCHECKER=1
+fi
 
 #
 # Print error message and exit
@@ -45,11 +54,13 @@ export JUNIT_JAR="/home/DPMiner/lib/junit.jar"
 
 export HAMCREST_JAR="/home/DPMiner/lib/hamcrest-core.jar"
 
-SCRIPT_DIR="$SCRIPT_DIR/src"
+BUILD_DIR="${SCRIPT_DIR}bin/"
 
-BUILD_DIR="$SCRIPT_DIR/bin"
-
-TEST_DIR="${2}" #/data/jchecker/data/test/{class_name}
+TEST_DIR="${2}" #/data/jchecker/data/test/{class_name}/
+LAST_CHAR="${TEST_DIR: -1}"
+if [[ "$LAST_CHAR" != "/" ]]; then
+  TEST_DIR="${TEST_DIR}/"
+fi
 
 # ------------------------------------------------------------------------- Main
 
@@ -59,8 +70,10 @@ TEST_DIR="${2}" #/data/jchecker/data/test/{class_name}
 
 echo "Compile source and test cases ..."
 
+javac -d bin "@srclist.txt"
+
 cd "$TEST_DIR" || die "Failed to change directory to $TEST_DIR!"
-javac -cp $JUNIT_JAR:$BUILD_DIR "$TEST_DIR/src/JunitTest.java" -d "$TEST_DIR/bin" || die "Failed to compile test cases!"
+javac -cp $JUNIT_JAR:$BUILD_DIR "${TEST_DIR}src/JunitTest.java" -d "${TEST_DIR}bin" || die "Failed to compile test cases!"
 
 cd "$SCRIPT_DIR" || die "Failed to change directory to $SCRIPT_DIR!"
 
@@ -70,7 +83,8 @@ cd "$SCRIPT_DIR" || die "Failed to change directory to $SCRIPT_DIR!"
 
 echo "Collect list of unit test cases to run ..."
 
-UNIT_TESTS_FILE="$TEST_DIR/tests.txt"
+UNIT_TESTS_FILE="${TEST_DIR}tests.txt"
+TEST_DIR="${TEST_DIR}bin"
 
 java -cp $TEST_DIR:$GZOLTAR_CLI_JAR \
   com.gzoltar.cli.Main listTestMethods $TEST_DIR \
@@ -82,12 +96,12 @@ java -cp $TEST_DIR:$GZOLTAR_CLI_JAR \
 # Collect coverage
 #
 
-SER_FILE="$BUILD_DIR/gzoltar.ser"
+SER_FILE="${BUILD_DIR}gzoltar.ser"
 
 echo "Perform offline instrumentation ..."
 
 # Backup original classes
-BUILD_BACKUP_DIR="$SCRIPT_DIR/.build"
+BUILD_BACKUP_DIR="${SCRIPT_DIR}.build"
 rm -rf "$BUILD_BACKUP_DIR"
 mv "$BUILD_DIR" "$BUILD_BACKUP_DIR" || die "Backup of original classes has failed!"
 mkdir -p "$BUILD_DIR"
@@ -107,7 +121,7 @@ java -cp $BUILD_DIR:$TEST_DIR:$JUNIT_JAR:$HAMCREST_JAR:$GZOLTAR_AGENT_RT_JAR:$GZ
   com.gzoltar.cli.Main runTestMethods \
     --testMethods "$UNIT_TESTS_FILE" \
     --offline \
-    --collectCoverage || die "Coverage collection has failed!"
+    --collectCoverage
 
 # Restore original classes
 cp -R $BUILD_BACKUP_DIR/* "$BUILD_DIR" || die "Restore of original classes has failed!"
@@ -122,7 +136,12 @@ rm -rf "$BUILD_BACKUP_DIR"
 
 echo "Create fault localization report ..."
 
-OUTPUT_DIR="../"
+if [[ $JCHECKER == 1 ]];
+then
+  OUTPUT_DIR="../"
+else
+  OUTPUT_DIR="."
+fi
 
 SPECTRA_FILE="$OUTPUT_DIR/sfl/txt/spectra.csv"
 MATRIX_FILE="$OUTPUT_DIR/sfl/txt/matrix.txt"
