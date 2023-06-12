@@ -70,8 +70,6 @@ fi
 
 echo "Compile source and test cases ..."
 
-javac -d bin "@srclist.txt"
-
 cd "$TEST_DIR" || die "Failed to change directory to $TEST_DIR!"
 javac -cp $JUNIT_JAR:$BUILD_DIR "${TEST_DIR}src/JunitTest.java" -d "${TEST_DIR}bin" || die "Failed to compile test cases!"
 
