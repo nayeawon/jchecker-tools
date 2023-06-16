@@ -1,10 +1,9 @@
 package edu.handong.csee.isel.tbar.config;
 
 public class Configuration {
-    public static String projectPath = "/data/jchecker";
-    public static String knownBugPositions = "BugPositions.txt";
+    public static String projectPath = "/data/jchecker2.0";
+    public static String knownBugPositions = "";
     public static String suspPositionsFilePath = "SuspiciousCodePositions";
-    public static String failedTestCasesFilePath = "FailedTestCases";
     public static String faultLocalizationMetric = "Ochiai";
     public static String outputPath = "";
 

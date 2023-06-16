@@ -8,8 +8,8 @@ import java.util.concurrent.*;
 
 public class ShellUtils {
 
-	public static String shellRun(List<String> asList, String buggyProject, int type) throws IOException {
-		String fileName;
+    public static String shellRun(List<String> asList, String buggyProject, int type) throws IOException {
+        String fileName;
         String cmd;
         if (System.getProperty("os.name").toLowerCase().startsWith("win")){
             fileName = Configuration.TEMP_FILES_PATH + buggyProject + ".bat";
@@ -21,9 +21,9 @@ public class ShellUtils {
         }
         File batFile = new File(fileName);
         if (!batFile.exists()){
-        	if (!batFile.getParentFile().exists()) {
-        		batFile.getParentFile().mkdirs();
-        	}
+            if (!batFile.getParentFile().exists()) {
+                batFile.getParentFile().mkdirs();
+            }
             boolean result = batFile.createNewFile();
             if (!result){
                 throw new IOException("Cannot Create bat file:" + fileName);
@@ -41,12 +41,13 @@ public class ShellUtils {
             }
         }
         batFile.deleteOnExit();
-        
+
         Process process= Runtime.getRuntime().exec(cmd);
         String results = ShellUtils.getShellOut(process, type);
         batFile.delete();
         return results;
-	}
+    }
+
 
 	private static String getShellOut(Process process, int type) {
 		ExecutorService service = Executors.newSingleThreadExecutor();

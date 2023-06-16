@@ -20,7 +20,7 @@ import java.util.List;
 
 public class TBarFixer extends AbstractFixer{
 
-    public Granularity granularity = Granularity.FL;
+    public Granularity granularity = Granularity.Line;
 
     public enum Granularity {
         Line,
@@ -35,34 +35,34 @@ public class TBarFixer extends AbstractFixer{
     }
 
     @Override
-    public List<SuspCodeNode> parseSuspiciousCode(SuspiciousPosition suspiciousCode) {
-        return null;
-    }
-
-    @Override
     public void fixProcess() {
         if (!dp.validPaths) return;
 
         // Read suspicious positions.
         List<SuspiciousPosition> suspiciousCodeList = null;
         if (granularity == Granularity.Line) {
-            // It assumes that the line-level bug positions are known.
             suspiciousCodeList = readKnownBugPositionsFromFile();
         } else if (granularity == Granularity.File) {
-            // It assumes that the file-level bug positions are known.
             List<String> buggyFileList = readKnownFileLevelBugPositions();
             suspiciousCodeList = readSuspiciousCodeFromFile(buggyFileList);
         } else {
             suspiciousCodeList = readSuspiciousCodeFromFile();
         }
 
-        if (suspiciousCodeList == null) return;
+        if (suspiciousCodeList == null) {
+            System.err.println("suspiciousCodeList is null");
+            return;
+        }
 
         List<SuspCodeNode> triedSuspNode = new ArrayList<>();
-        log.info("=======TBar: Start to fix suspicious code======");
+        System.out.println("=======TBar: Start to fix suspicious code======");
         for (SuspiciousPosition suspiciousCode : suspiciousCodeList) {
+            System.out.println(suspiciousCode.classPath);
             List<SuspCodeNode> scns = parseSuspiciousCode(suspiciousCode);
-            if (scns == null) continue;
+            if (scns == null) {
+                System.out.println(suspiciousCode.classPath + " is null");
+                continue;
+            }
 
             for (SuspCodeNode scn : scns) {
 //				log.debug(scn.suspCodeStr);
@@ -82,11 +82,11 @@ public class TBarFixer extends AbstractFixer{
                 // Match fix templates for this suspicious code with its context information.
                 fixWithMatchedFixTemplates(scn, distinctContextInfo);
 
-                if (!isTestFixPatterns && minErrorTest == 0) break;
+                if (!isTestFixPatterns && minErrorTest == 0) {
+                    break;
+                }
                 if (this.patchId >= 10000) break;
             }
-            if (!isTestFixPatterns && minErrorTest == 0) break;
-            if (this.patchId >= 10000) break;
         }
         log.info("=======TBar: Finish off fixing======");
 
@@ -98,15 +98,14 @@ public class TBarFixer extends AbstractFixer{
         String[] posArray = new FileHelper().readFile(Configuration.knownBugPositions).split("\n");
         Boolean isBuggyProject = null;
         for (String pos : posArray) {
+            System.out.println(pos);
             if (isBuggyProject == null || isBuggyProject) {
-                if (pos.startsWith(this.buggyProject + "@")) {
+                if (pos.contains("@")) {
                     isBuggyProject = true;
 
                     String[] elements = pos.split("@");
-                    String[] lineStrArr = elements[2].split(",");
-                    String classPath = elements[1];
-                    String shortSrcPath = dp.srcPath.substring(dp.srcPath.indexOf(this.buggyProject) + this.buggyProject.length() + 1);
-                    classPath = classPath.substring(shortSrcPath.length(), classPath.length() - 5);
+                    String[] lineStrArr = elements[1].split(",");
+                    String classPath = elements[0];
 
                     for (String lineStr : lineStrArr) {
                         if (lineStr.contains("-")) {

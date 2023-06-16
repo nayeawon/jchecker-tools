@@ -6,14 +6,13 @@ import java.util.List;
 
 public class TestUtils {
     public static int getFailTestNumInProject(String path, List<String> failedTests) {
-        return FileUtils.getGZoltarResultFromFile(path);
+        return FileUtils.getGZoltarResultFromFile(path, failedTests);
     }
-    public static String readPatch(String projectName) {
-        try {
-            String buggyProject = projectName.substring(projectName.lastIndexOf("/") + 1);
-            return ShellUtils.shellRun(Arrays.asList("cd " + projectName + "\n", "git diff"), buggyProject, 1).trim();
-        } catch (IOException e){
-            return null;
-        }
-    }
+//    public static String readPatch(String projectName) {
+//        try {
+//            return ShellUtils.shellRun(Arrays.asList("cd " + projectName + "\n", "git diff"), projectName1).trim();
+//        } catch (IOException e){
+//            return null;
+//        }
+//    }
 }

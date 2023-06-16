@@ -4,7 +4,7 @@ import edu.handong.csee.isel.tbar.config.Configuration;
 import edu.handong.csee.isel.tbar.utils.FileHelper;
 import edu.handong.csee.isel.tbar.utils.JavaLibrary;
 
-import java.io.File;
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,19 +40,32 @@ public class DataPreparer {
     }
 
     private void loadPaths(String path, String className) {
-        // path = /data/jchecker/{className}/{studentNum}/feedback/{date}/autoGeneration
-        String projectDir = Configuration.projectPath; // projectDir = /data/jchecker
-        classPath = path + "/bin";
-        testClassPath = projectDir + "/data/test/" + className + "/bin";
-        srcPath = path + "/src";
-        testSrcPath = projectDir + "/data/test/" + className + "/src";
+        // path = /data/jchecker/{className}/{std_id}/yyyy_MM_dd_HH_mm_SS
+        File srcFile = new File(path + "/autoGeneration/srclist.txt");
+        String srcParentFile;
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(srcFile));
+            String line = reader.readLine();
+            line = line.replace("./", "");
+            srcParentFile = line.substring(0, line.indexOf("/src/"));
+            reader.close();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        String projectDir = Configuration.projectPath; // projectDir = /data/jchecker2.0/
+        classPath = path + "/autoGeneration/bin/";
+        testClassPath = projectDir + "/data/junitTest/" + className + "/bin/";
+        srcPath = path + "/autoGeneration/" + srcParentFile + "/src/";
+        testSrcPath = projectDir + "/data/junitTest/" + className + "/src/";
 
         List<File> libPackages = new ArrayList<>();
-        if (new File(projectDir + path + "/lib/").exists()) {
+        if (new File(path + "/autoGeneration/lib/").exists()) {
             // ToDO: change the libPackages path
             libPackages.addAll(new FileHelper().getAllFiles(path + "/lib/", ".jar"));
         }
-        if (new File(projectDir + path + "/build/lib/").exists()) {
+        if (new File(path + "/autoGeneration/build/lib/").exists()) {
             // ToDO: change the libPackages path
             libPackages.addAll(new FileHelper().getAllFiles(path + "/build/lib/", ".jar"));
         }

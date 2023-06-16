@@ -14,11 +14,11 @@ public class PathUtils {
     }
 
     public static String getJunitPath() {
-        return System.getProperty("user.dir")+"/target/dependency/junit-4.12.jar";
+        return "/home/DPMiner/lib/junit.jar";
     }
 
     private static String getHamcrestPath() {
-        return System.getProperty("user.dir")+"/target/dependency/hamcrest-all-1.3.jar";
+        return "/home/DPMiner/lib/hamcrest-core.jar";
     }
 
     public static String buildCompileClassPath(List<String> additionalPath, String classPath, String testClassPath){

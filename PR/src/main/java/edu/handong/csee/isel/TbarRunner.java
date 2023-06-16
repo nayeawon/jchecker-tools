@@ -4,10 +4,9 @@ import edu.handong.csee.isel.mail.MailUtil;
 import edu.handong.csee.isel.tbar.AbstractFixer;
 import edu.handong.csee.isel.tbar.TBarFixer;
 import edu.handong.csee.isel.tbar.config.Configuration;
+import edu.handong.csee.isel.tbar.utils.jCheckerUtils;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.*;
 
 public class TbarRunner {
@@ -16,104 +15,31 @@ public class TbarRunner {
             System.err.println("Help");
             System.exit(0);
         }
-        System.setProperty("jchecker.path", args[0]);
+        String path = args[0];
         String className = args[1];
-        String studentNum = args[2];
-        String date = args[3];
+        String email = args[2];
         TbarRunner main = new TbarRunner();
-        main.fixBug(studentNum, className, date);
-    }
-
-    private String processRankingCsv(String path) {
-        String targetFile = path + "/ochiai.ranking.csv";
-        String processedFile = path + "/intermidiate/ranking.txt";
-        BufferedReader reader = null;
-        BufferedWriter writer = null;
-        try {
-            reader = new BufferedReader(new FileReader(targetFile));
-            writer = new BufferedWriter(new FileWriter(processedFile));
-            String line = reader.readLine();
-            while((line = reader.readLine()) != null) {
-                String packageName = line.substring(0, line.indexOf("$"));
-                String fileName = line.substring(line.indexOf("$") + 1, line.indexOf("#"));
-                String methodName = line.substring(line.indexOf("#") + 1, line.indexOf(":"));
-                String lineNumber = line.substring(line.indexOf(":") + 1, line.indexOf(";"));
-                String suspiciousValue = line.substring(line.indexOf(";") + 1);
-                writer.write(packageName + "." + fileName + "@" + lineNumber + "\n");
-            }
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            try {
-                reader.close();
-                writer.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return processedFile;
-    }
-
-    private void processFailedTests(String path) {
-        String targetFile = path + "/tests.csv";
-        String processedFile = path + "/intermediate/tests.txt";
-        BufferedReader reader = null;
-        BufferedWriter writer = null;
-        List<String> failedTests = new ArrayList<>();
-        try {
-            reader = new BufferedReader(new FileReader(targetFile));
-            writer = new BufferedWriter(new FileWriter(processedFile));
-            String line = reader.readLine();
-            int num = 0;
-            while((line = reader.readLine()) != null) {
-                String[] parsedLine = line.split(",");
-                if (parsedLine[1].equals("FAIL")) {
-                    String packageName = parsedLine[0].replace("#", "::");
-                    failedTests.add(packageName);
-                    num++;
-                }
-                writer.write("Failing tests: " + num + "\n");
-                for (String failedTest : failedTests) {
-                    writer.write("  - " + failedTest + "\n");
-                }
-            }
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            try {
-                reader.close();
-                writer.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        main.fixBug(path, className, email);
     }
 
     public void fixBug(String path, String className, String email) {
-        String inputPath = path;
         if (path.contains("/autoGeneration/")) {
-            path.replace("/autoGeneration/", "");
+            path = path.replace("/autoGeneration/", "");
         }
         ExecutorService executor = Executors.newCachedThreadPool();
-        Callable<Object> task = new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                // path = /data/jchecker/{className}/{studentNum}/feedback/{date}/autoGeneration
-                Configuration.outputPath = path + "/pr";
-                String suspiciousFileStr = processRankingCsv(path + "/sfl/txt");
-                processFailedTests(path + "/sfl/txt");
-                AbstractFixer fixer = new TBarFixer(inputPath, className);
-                fixer.dataType = "TBar";
-                fixer.metric = Configuration.faultLocalizationMetric;
-                fixer.suspCodePosFile = new File(suspiciousFileStr);
-                fixer.fixProcess();
-                int fixedStatus = fixer.fixedStatus;
-                return fixedStatus;
-            }
+        String finalPath = path;
+        Callable<Object> task = () -> {
+            // path = /data/jchecker/{className}/{studentNum}/feedback/{date}/autoGeneration
+            Configuration.outputPath = finalPath + "/tbar";
+            String suspiciousFileStr = jCheckerUtils.processRankingCsv(finalPath + "/sfl/txt");
+            jCheckerUtils.processFailedTests(finalPath + "/sfl/txt");
+            AbstractFixer fixer = new TBarFixer(finalPath, className);
+            fixer.dataType = "TBar";
+            fixer.metric = Configuration.faultLocalizationMetric;
+            fixer.suspCodePosFile = new File(suspiciousFileStr);
+            fixer.fixProcess();
+            int fixedStatus = fixer.fixedStatus;
+            return fixedStatus;
         };
         Future<Object> future = executor.submit(task);
         Object result = 0;
@@ -136,11 +62,11 @@ public class TbarRunner {
                 break;
             case 1:
                 System.out.println("Succeeded to fix bug " + className + ":" + path);
-                new MailUtil(true).run(path + "/pr/FixedBugs", email);
+                new MailUtil(true).run(path + "/tbar/FixedBugs", email);
                 break;
             case 2:
                 System.out.println("Partial succeeded to fix bug " + className + ":" + path);
-                new MailUtil(true).run(path + "/pr/PartiallyFixedBugs", email);
+                new MailUtil(true).run(path + "/tbar/PartiallyFixedBugs", email);
                 break;
         }
     }
