@@ -16,12 +16,11 @@ public class TbarRunner {
             System.err.println("Help");
             System.exit(0);
         }
-        System.setProperty("jchecker.path", args[0]);
+        String path = args[0];
         String className = args[1];
-        String studentNum = args[2];
-        String date = args[3];
+        String email = args[2];
         TbarRunner main = new TbarRunner();
-        main.fixBug(studentNum, className, date);
+        main.fixBug(path, className, email);
     }
 
     private String processRankingCsv(String path) {
