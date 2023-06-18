@@ -34,6 +34,13 @@ die() {
   exit 1
 }
 
+#
+# Check whether list contains string
+#
+contains() {
+  [[ $1 =~ (^| )$2($| ) ]] && return 1 || return 0
+}
+
 # ------------------------------------------------------------------ Envs & Args
 
 GZOLTAR_VERSION="1.7.2"
@@ -54,7 +61,19 @@ export JUNIT_JAR="/home/DPMiner/lib/junit.jar"
 
 export HAMCREST_JAR="/home/DPMiner/lib/hamcrest-core.jar"
 
-BUILD_DIR="${SCRIPT_DIR}bin/"
+export LAMBDA_JAR="/home/DPMiner/lib/system-lambda.jar"
+
+declare -a LST=$(ls "$SCRIPT_DIR")
+CONTAINS=$(contains "$LST" "bin")
+if [ "$CONTAINS" == 1 ]; then
+  GRADLE=0
+  BUILD_DIR="${SCRIPT_DIR}bin/"
+else
+  GRADLE=1
+  echo "Gradle project detected!"
+  BUILD_DIR="${SCRIPT_DIR}${LST[0]}/build/classes/java/main/"
+  echo "$BUILD_DIR"
+fi
 
 TEST_DIR="${2}" #/data/jchecker/data/test/{class_name}/
 LAST_CHAR="${TEST_DIR: -1}"
@@ -71,7 +90,8 @@ fi
 echo "Compile source and test cases ..."
 
 cd "$TEST_DIR" || die "Failed to change directory to $TEST_DIR!"
-javac -cp $JUNIT_JAR:$BUILD_DIR "${TEST_DIR}src/JunitTest.java" -d "${TEST_DIR}bin" || die "Failed to compile test cases!"
+
+javac -cp $LAMBDA_JAR:$JUNIT_JAR:$BUILD_DIR "${TEST_DIR}src/JunitTest.java" -d "${TEST_DIR}bin" || die "Failed to compile test cases!"
 
 cd "$SCRIPT_DIR" || die "Failed to change directory to $SCRIPT_DIR!"
 
@@ -94,9 +114,9 @@ java -cp $TEST_DIR:$GZOLTAR_CLI_JAR \
 # Collect coverage
 #
 
-SER_FILE="${BUILD_DIR}gzoltar.ser"
-
 echo "Perform offline instrumentation ..."
+
+CLASSPATH=$BUILD_DIR:$TEST_DIR:$JUNIT_JAR:$HAMCREST_JAR:$LAMBDA_JAR:$GZOLTAR_AGENT_RT_JAR:$GZOLTAR_CLI_JAR
 
 # Backup original classes
 BUILD_BACKUP_DIR="${SCRIPT_DIR}.build"
@@ -104,19 +124,31 @@ rm -rf "$BUILD_BACKUP_DIR"
 mv "$BUILD_DIR" "$BUILD_BACKUP_DIR" || die "Backup of original classes has failed!"
 mkdir -p "$BUILD_DIR"
 
+BACKUP_CP=$BUILD_BACKUP_DIR:$GZOLTAR_AGENT_RT_JAR:$GZOLTAR_CLI_JAR
+
+if [ "$GRADLE" == 1 ]; then
+    SER_FILE="${SCRIPT_DIR}gzoltar.ser"
+    CLASSPATH=${TEST_DIR}/../lib/*:$CLASSPATH
+    BACKUP_CP=${TEST_DIR}/../lib/*:$BACKUP_CP
+else
+    SER_FILE="${BUILD_DIR}gzoltar.ser"
+fi
+
+
 # Perform offline instrumentation
-java -cp $BUILD_BACKUP_DIR:$GZOLTAR_AGENT_RT_JAR:$GZOLTAR_CLI_JAR \
-  com.gzoltar.cli.Main instrument \
-  --outputDirectory "$BUILD_DIR" \
-  $BUILD_BACKUP_DIR || die "Offline instrumentation has failed!"
+java -cp $BACKUP_CP \
+    com.gzoltar.cli.Main instrument \
+    --outputDirectory "$BUILD_DIR" \
+    $BUILD_BACKUP_DIR || die "Offline instrumentation has failed!"
 
 echo "Run each unit test case in isolation ..."
 
 # Run each unit test case in isolation
-java -cp $BUILD_DIR:$TEST_DIR:$JUNIT_JAR:$HAMCREST_JAR:$GZOLTAR_AGENT_RT_JAR:$GZOLTAR_CLI_JAR \
-  -Dgzoltar-agent.destfile=$SER_FILE \
-  -Dgzoltar-agent.output="file" \
-  com.gzoltar.cli.Main runTestMethods \
+
+java -cp $CLASSPATH \
+    -Dgzoltar-agent.destfile=$SER_FILE \
+    -Dgzoltar-agent.output="file" \
+    com.gzoltar.cli.Main runTestMethods \
     --testMethods "$UNIT_TESTS_FILE" \
     --offline \
     --collectCoverage
