@@ -11,8 +11,22 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
+/**
+ * Execute GZoltar, and parse result into JSON format.
+ * @author nayeawon
+ */
 public class GZoltarRunner {
     private static final String shellPath = "/home/DPMiner/lib/FL.sh";
+
+    /**
+     * Use ProcessBuilder to execute GZoltar.
+     * Use Gson by com.google.gson to parse the result of GZoltar into JSON format
+     * @param srcPath path to source classes
+     * @param testPath path to JUnit test class
+     * @return JSON formatted string.
+     * It contains information of top 3 suspicious score.
+     * It is returned to Backend engine of jChecker and stored in Database.
+     */
     public String run(String srcPath, String testPath) {
         ArrayList<String> command = new ArrayList<>();
         command.add(shellPath);
