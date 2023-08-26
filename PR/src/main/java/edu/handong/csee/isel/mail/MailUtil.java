@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ * Utility class for sending emails and processing GPT responses.
+ */
 public class MailUtil {
     private static final String mailSuccessPath = "/home/DPMiner/lib/Mail-success.sh";
     private static final String mailFailPath = "/home/DPMiner/lib/Mail-fail.sh";
@@ -19,6 +22,10 @@ public class MailUtil {
     private static final String mailToken = "/home/DPMiner/lib/token.txt";
     private boolean isKorean;
 
+    /**
+     * Constructor for MailUtil.
+     * @param succeed Indicates whether the process of GPT succeeded or failed.
+     */
     public MailUtil(Boolean succeed) {
         this.succeed = succeed;
     }
@@ -79,6 +86,11 @@ public class MailUtil {
         return "";
     }
 
+    /**
+     * Runs the email sending process.
+     * @param srcPath The source path.
+     * @param email The recipient's email address.
+     */
     public void run(String srcPath, String email) {
         if (!succeed) {
             sendEmail("", email);
